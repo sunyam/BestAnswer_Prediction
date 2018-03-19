@@ -1,31 +1,45 @@
 import lxml.html
 import csv
+import multiprocessing
+import io
 
-def main():
-    with open("data/answers.csv", "rb") as readFile, open("data/procAnswers.csv", "wb") as writeFile:
-        csvReader = csv.reader(readFile)
-        csvWriter = csv.writer(writeFile)
 
-        header = csvReader.next()
+def parseFile(filename):
+    with io.open('data/raw/%s.csv' % filename, 'rb') as readFile, io.open('data/proc/%s.csv' % filename, 'wb') as writeFile:
+        csvReader = csv.DictReader(readFile)
+        header = csvReader.fieldnames
         header.extend(['codeCount', 'urlCount', 'imgCount'])
-        csvWriter.writerow(header)
 
+        csvWriter = csv.DictWriter(writeFile, fieldnames=header)
+        csvWriter.writeheader()
+
+        print('Parsing %s...' % filename)
         for row in csvReader:
-
             # Get <code> and <a> counts (code snippets and hyperlinks)
-            codeCount = row[5].count("<code>")
-            urlCount = row[5].count("<a")
-            imgCount = row[5].count("<img")
+            codeCount = row['Body'].count('<code')
+            urlCount = row['Body'].count('<a')
+            imgCount = row['Body'].count('<img')
 
             # Get last entry, i.e. Body, and strips all HTML tags
-            tmp = lxml.html.fromstring(row[5])
-            row[5] = tmp.text_content().encode('utf-8')
+            tmp = lxml.html.fromstring(row['Body'])
+            row['Body'] = tmp.text_content().encode('utf-8')
 
-            row.extend([codeCount, urlCount, imgCount])
+            row.update({
+                'codeCount': codeCount,
+                'urlCount': urlCount,
+                'imgCount': imgCount,
+            })
 
             # Write to file
             csvWriter.writerow(row)
 
 
-if __name__ == "__main__":
+def main():
+    filename = ['AnswersPython', 'AnswersStack', 'QuestionsPython', 'QuestionsStack']
+
+    pool = multiprocessing.Pool(processes=4)
+    pool.map(parseFile, filename)
+
+
+if __name__ == '__main__':
     main()
