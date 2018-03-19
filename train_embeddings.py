@@ -3,8 +3,8 @@
 import gensim
 import os
 import re
-#from nltk.corpus import stopwords
-#from string import punctuation
+from nltk.corpus import stopwords
+from string import punctuation
 from nltk.tokenize import word_tokenize, sent_tokenize
 
 # The dataset is ready (.txt files containing all StackOverflow posts, free from any useless tags)
@@ -50,15 +50,14 @@ def sent_to_words(sentence):
     # Make lowercase
     sentence = sentence.lower()
     words = word_tokenize(sentence)
-    return words
-#    my_stopwords = stopwords.words('english') + list(punctuation)
-#    # Filter stopwords
-#    words_output = []
-#    for w in words:
-#        if w not in my_stopwords:
-#            words_output.append(w)
-#    
-#    return words_output
+    my_stopwords = stopwords.words('english') + list(punctuation)
+    # Filter stopwords
+    words_output = []
+    for w in words:
+        if w not in my_stopwords:
+            words_output.append(w)
+    
+    return words_output
 
 path = '/Users/sunyambagga/Desktop/SE 762/Project/Dataset/TXT'
 s = BlogSentences(path)
