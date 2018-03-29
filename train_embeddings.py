@@ -1,6 +1,10 @@
 # Train a word2vec model and save it for later use
 
-import gensim
+import warnings
+warnings.filterwarnings(action='ignore', category=UserWarning, module='gensim')
+#import gensim
+from gensim.models import Word2Vec
+
 import os
 import re
 from nltk.corpus import stopwords
@@ -59,7 +63,11 @@ def sent_to_words(sentence):
     
     return words_output
 
-path = '/Users/sunyambagga/Desktop/SE 762/Project/Dataset/TXT'
-s = BlogSentences(path)
-model = gensim.models.Word2Vec(s, size=300, workers=8, min_count=10)
-model.save('/Users/sunyambagga/Desktop/SO_model.word2vec')
+pathIn = 'data/txt2'
+pathOut = 'data/word2vec/model.word2vec'
+#path = '/Users/sunyambagga/Desktop/SE 762/Project/Dataset/TXT'
+s = BlogSentences(pathIn)
+model = Word2Vec(s, size=300, workers=8, min_count=10)
+#model = gensim.models.Word2Vec(s, size=300, workers=8, min_count=10)
+#model.save('/Users/sunyambagga/Desktop/SO_model.word2vec')
+model.save(pathOut)

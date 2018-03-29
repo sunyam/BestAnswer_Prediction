@@ -1,0 +1,6 @@
+data/*
+.idea/workspace.xml
+.ipync_checkpoints/
+env/*
+.pyc
+.ipynb
