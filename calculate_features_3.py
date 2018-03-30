@@ -10,11 +10,13 @@ import cPickle
 import pandas as pd
 from sklearn.metrics.pairwise import cosine_similarity
 
+import multiprocessing
+import time
+
 # Ignore stupid warnings for now:
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
-import time
 
 def calculate_QA_sim(ans_id, parent_id):
     ans_vector = answer_vectors[ans_id]
@@ -28,35 +30,29 @@ def calculate_Ans_sim(main_ans_id, other_ans_id):
     simAA = cosine_similarity(main_vector, other_vector)
     return simAA[0][0]
 
-def main_method():
-    unique_question_ids = list(set(python_df['ParentId'].tolist()))
 
-    FEATURE_VECTOR = {}
-    skipped_questions = 0
+FEATURE_VECTOR = {}
+skipList = []
+def poolWork(question):
+    # Consider only the answers to the given 'question'
+    temp_df = python_df.loc[python_df['ParentId'] == question]
+    # Sort for the calculation of feature 'ans_index'
+    temp_df.sort_values('CreationDate', inplace=True)
+    answer_ids = temp_df['Id'].tolist()
 
-    counter = 0
-    t0 = time.time()
-    for question in unique_question_ids:
-        # Consider only the answers to the given 'question'
-        temp_df = python_df.loc[python_df['ParentId'] == question]
-        # Sort for the calculation of feature 'ans_index'
-        temp_df.sort_values('CreationDate', inplace=True)
-        answer_ids = temp_df['Id'].tolist()
+    # If just one answer for the question, skip:
+    if len(answer_ids) == 1:
+        temp_dict = {
+            'competitor_num': 0,
+            'ans_index': 1, 'QA_sim': 0.0,
+            'min_ans_sim': 0.0,
+            'max_ans_sim': 0.0,
+            'ave_ans_sim': 0.0
+        }
+        FEATURE_VECTOR[answer_ids[0]] = temp_dict
+        skipList.append(question)
 
-        # If just one answer for the question, skip:
-        if len(answer_ids) == 1:
-            temp_dict = {
-                'competitor_num': 0,
-                'ans_index': 1, 'QA_sim': 0.0,
-                'min_ans_sim': 0.0,
-                'max_ans_sim': 0.0,
-                'ave_ans_sim': 0.0
-            }
-            FEATURE_VECTOR[answer_ids[0]] = temp_dict
-            skipped_questions += 1
-            # print "\nSkipping question " + str(question) + " because it has just one answer: ", answer_ids
-            continue
-
+    else:
         for ans_main_id in answer_ids:
             temp_dict = {}
 
@@ -80,19 +76,31 @@ def main_method():
 
             temp_dict['min_ans_sim'] = min(similarities)
             temp_dict['max_ans_sim'] = max(similarities)
-            temp_dict['ave_ans_sim'] = sum(similarities)/float(len(similarities))
+            temp_dict['ave_ans_sim'] = sum(similarities) / float(len(similarities))
 
             FEATURE_VECTOR[ans_main_id] = temp_dict
 
+
+def main_method():
+    unique_question_ids = list(set(python_df['ParentId'].tolist()))
+
+    pool = multiprocessing.Pool()
+
+    counter = 0
+    t0 = time.time()
+    for question in unique_question_ids:
+        pool.apply_async(poolWork, args=(question,))
         # Keep track of number of questions:
         counter += 1
         if counter % 32 == 0:
             t1 = time.time()
-            print('Questions covered so far: %d in %d' % (counter, t1 - t0))
+            print('Questions covered so far: %d in %d' % (counter, t1-t0))
             t0 = t1
 
-    print "(kinda) Skipped questions (that had only one answer): ", skipped_questions
-    
+    pool.close()
+    pool.join()
+    print "(kinda) Skipped questions (that had only one answer): ", len(skipList)
+
     # Save results
     with open(output_path, 'wb') as f:
         cPickle.dump(FEATURE_VECTOR, f)

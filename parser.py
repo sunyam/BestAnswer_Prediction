@@ -35,9 +35,14 @@ def parseFile(filename):
 
 
 def main():
-    filename = ['AnswersPython', 'AnswersStack', 'QuestionsPython', 'QuestionsStack']
+    filename = [
+        #'AnswersPython',
+        #'AnswersStack',
+        'QuestionsPythonClean',
+        #'QuestionsStack',
+    ]
 
-    pool = multiprocessing.Pool(processes=4)
+    pool = multiprocessing.Pool()
     pool.map(parseFile, filename)
 
 

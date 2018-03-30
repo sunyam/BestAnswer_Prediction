@@ -43,13 +43,16 @@ def calculate_vector(body):
 if __name__ == '__main__':
     
     # Set this flag to be True if processing Questions.csv; False for Answers.csv:
-    Q_FLAG = True
+    Q_FLAG = False
 
-    df_path = '../Dataset/pythonquestions/Questions.csv'
+    #df_path = '../Dataset/pythonquestions/Questions.csv'
+    #df_path = 'data/proc/QuestionsPythonClean.csv'
+    df_path = 'data/proc/AnswersPython.csv'
     python_df = pd.read_csv(df_path)
     
     # Loading Word2Vec model:
-    path_to_model = '/Users/sunyambagga/Desktop/SO_model.word2vec'
+    #path_to_model = '/Users/sunyambagga/Desktop/SO_model.word2vec'
+    path_to_model = 'data/word2vec/model.word2vec'
     model = gensim.models.Word2Vec.load(path_to_model)
 
     # If dealing with questions:
@@ -57,12 +60,12 @@ if __name__ == '__main__':
         print "Processing the Questions ...."
         python_df['NewBody'] = python_df['Title'] + python_df['Body']
         df = python_df[['Id', 'NewBody']]
-        output_filename = 'SO_Questions_vectors.pickle'
+        output_filename = 'SO_Questions_vectors.pkl'
 
     else:
         print "Processing the Answers ...."
         df = python_df[['Id', 'Body']]
-        output_filename = 'SO_Answers_vectors.pickle'
+        output_filename = 'SO_Answers_vectors.pkl'
     
     # Have to dropna() because 2 bodies were 'nan' in Answers.csv
     df.dropna(inplace=True)
@@ -82,12 +85,14 @@ if __name__ == '__main__':
             print "Why float: ", body
         
         k += 1
-        if k % 100000 == 0:
+        if k % 10000 == 0:
             print "Done: ", k
 
     print "Null vector (vector of three hundred 0's) count: ", null_vector_count
 
     # Pickle the average-vectors for later use:
-    with open('/Users/sunyambagga/Desktop/' + output_filename, 'wb') as f:
+    #relative_path = '/Users/sunyambagga/Desktop/'
+    relative_path = 'data/pickle/'
+    with open(relative_path + output_filename, 'wb') as f:
         pickle.dump(map_id_to_vec, f)
     print "\nSuccessfully pickled " + str(len(map_id_to_vec)) + " posts."
